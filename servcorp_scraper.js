@@ -7,14 +7,12 @@
 		cheerio = require ('cheerio'),
 		jbuilder = require('jbuilder');
 
-	var	links = [],
-		country = [];
-
+	var	links = [];
 
 
 	// Print to console in human readable format
 	function printInformation(buildingNames, address, index){
-		var currentCountry = country[index].replace(/\s/g, '');
+		var currentCountry = countryNames[index].replace(/\s/g, '');
 		console.log('****************\n' + (index+1) + '. ' + currentCountry + '\n****************');
 
 		buildingNames.forEach(function(name, i){
@@ -26,11 +24,10 @@
 	}
 
 	// Print to console in JSON
-	function printJson(buildingNames, address, index){
-		var currentCountry = country[index].replace(/\s/g, '');
+	function printJson(countryName, buildingNames, address, index){
 
-		var output = jbuilder.create( function(json){
-			json.set(currentCountry, function(json){
+		var output = jbuilder.create(function(json){
+			json.set(countryName, function(json){
 				buildingNames.forEach(function(buildingName, index){
 					json.child( function(json){
 						json.set('name', buildingName );
@@ -38,7 +35,7 @@
 					});
 				});
 			});
-		});			
+		}); 
 
 		console.log(output.target());
 	}
@@ -60,12 +57,6 @@
 					links.push(link);
 				});
 
-				// load the names into an array
-				$('ul.locations li a span').each( function(i, h3){
-					var floorName = $(this).text();
-					country.push(floorName);
-				});
-
 				// print the number of locations
 				console.log('Servcorp operates in ' + links.length + ' different countries all over the world.');
 
@@ -79,14 +70,17 @@
 		
 	}
 
-	function getBuildingNamesAddresses(url, index, callback){
+	function getBuildingNamesAddresses(url, index, json, callback){
 		
+		var countryName = "";
 		var addresses = [];
 		var buildingNames = [];
 
 		request(url, function(error, response, body){
 			if(!error && response.statusCode == 200){
 				var $ = cheerio.load(body);
+
+				countryName = $('.module.page-title h1', '.last').text().replace(/[\s]{2,}/g, '');
 
 				$('p.building-address', 'div.building-details').each(function(i, span){
 					addresses[i] = $(this).html();
@@ -101,7 +95,7 @@
 				console.log("There was an error retrieving the information.");
 			}
 
-			printJson(buildingNames, addresses, index);
+			printJson(countryName, buildingNames, addresses, index);
 
 		});
 		
